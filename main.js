@@ -288,14 +288,172 @@ void loop() {
     },
     {
         id: 5,
-        title: "Program 05",
-        subtitle: "Additional module coming soon",
-        desc: "This slot is reserved for the next IoT lab module. Future programs such as MQTT brokers, bluetooth interfaces, or display outputs can be added here once provided.",
-        tags: ["Upcoming", "Locked"],
-        code: `// Coming Soon
-// This slot is reserved for your 5th program.
-// Upload the docx/pdf or write the code block, and we will integrate it.`,
-        locked: true
+        title: "Dual ESP32 Motor Control (ESP-NOW)",
+        subtitle: "One-Way Peer-to-Peer Communication & H-Bridge Control",
+        desc: "Controls a DC motor using two ESP32 microcontrollers communicating wirelessly via ESP-NOW. Includes a helper sketch to find the Receiver's physical MAC address, a Sender program that reads command inputs, and a Receiver program that controls H-bridge signals.",
+        tags: ["ESP-NOW", "Dual ESP32", "Motor Control", "H-Bridge"],
+        isMultiFile: true,
+        files: {
+            mac: {
+                name: "Receiver MAC Address Finder",
+                code: `#include "WiFi.h"
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000); // Give the Serial Monitor time to connect after reset
+  
+  // 1. Initialize the Wi-Fi hardware state completely
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect(); // Ensure it isn't trying to connect to a router
+  
+  delay(100); // Small pause to let the radio stack spin up
+  
+  // 2. Print out the real hardware MAC address
+  Serial.println("\n------------------------------------");
+  Serial.print("Motor ESP32 MAC Address: ");
+  Serial.println(WiFi.macAddress());
+  Serial.println("------------------------------------");
+}
+
+void loop() {
+  // Nothing here
+}`
+            },
+            sender: {
+                name: "ESP-NOW Sender Code",
+                code: `#include <esp_now.h>
+#include <WiFi.h>
+
+const int FWD_BUTTON_PIN = 4;
+const int BCK_BUTTON_PIN = 5;
+
+// The universal Broadcast Address (sends to ALL listening devices)
+uint8_t broadcastAddress[] = {0xB0, 0xCB, 0xD8, 0x0A, 0x73, 0x6C}; 
+
+typedef struct struct_message {
+  int direction; // 0 = Stop, 1 = Forward, 2 = Backward
+} struct_message;
+
+struct_message myData;
+esp_now_peer_info_t peerInfo;
+
+void setup() {
+  Serial.begin(115200);
+  
+  pinMode(FWD_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BCK_BUTTON_PIN, INPUT_PULLUP);
+
+  // Set Wi-Fi to Station mode
+  WiFi.mode(WIFI_STA);
+
+  // OPTIONAL BUT RECOMMENDED: Lock to Wi-Fi Channel 1
+  // ESP-NOW broadcasting works best when devices are strictly on the same channel
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Register the broadcast peer
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = 1; // Explicitly target channel 1 
+  peerInfo.encrypt = false;
+  
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add broadcast peer");
+    return;
+  }
+}
+
+void loop() {
+  int fwdState = digitalRead(FWD_BUTTON_PIN);
+  int bckState = digitalRead(BCK_BUTTON_PIN);
+  int lastCommand = myData.direction;
+
+  if (fwdState == LOW) {
+    myData.direction = 1;
+  } else if (bckState == LOW) {
+    myData.direction = 2;
+  } else {
+    myData.direction = 0;
+  }
+
+  // Send only on state change to keep the broadcast channel clean
+  if (myData.direction != lastCommand) {
+    esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
+    if (result == ESP_OK) {
+      Serial.printf("Broadcasted Command: %d\n", myData.direction);
+    } else {
+      Serial.println("Broadcast Error");
+    }
+  }
+  delay(50); 
+}`
+            },
+            receiver: {
+                name: "ESP-NOW Receiver Code",
+                code: `#include <esp_now.h>
+#include <WiFi.h>
+#include <esp_wifi.h> // Required to manually set the channel
+
+const int IN1 = 12;
+const int IN2 = 13;
+
+typedef struct struct_message {
+  int direction;
+} struct_message;
+
+struct_message incomingData;
+
+void OnDataRecv(const esp_now_recv_info *info, const uint8_t *incomingDataRaw, int len) {
+  memcpy(&incomingData, incomingDataRaw, sizeof(incomingData));
+  
+  if (incomingData.direction == 1) {
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    Serial.println("Motor: FORWARD");
+  } 
+  else if (incomingData.direction == 2) {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+    Serial.println("Motor: BACKWARD");
+  } 
+  else {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+    Serial.println("Motor: STOP");
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+
+  WiFi.mode(WIFI_STA);
+
+  // Force the ESP32 Wi-Fi config onto Channel 1 to guarantee it catches the broadcast
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+  esp_wifi_set_promiscuous(false);
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+  
+  esp_now_register_recv_cb(OnDataRecv);
+  Serial.println("Receiver ready, listening on Channel 1...");
+}
+
+void loop() {
+  // Stays empty
+}`
+            }
+        }
     }
 ];
 
@@ -400,6 +558,16 @@ function setupEventListeners() {
     btnCopy.addEventListener('click', copyCode);
 }
 
+// Helper to escape HTML characters for code blocks
+function escapeHTML(str) {
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // Open Code Modal
 function openModal(id) {
     const prog = programs.find(p => p.id === id);
@@ -415,18 +583,111 @@ function openModal(id) {
     // Render tags
     modalTags.innerHTML = prog.tags.map(t => `<span class="tag">${t}</span>`).join('');
     
-    // Set code content
-    codeSnippet.textContent = prog.code;
+    const modalContainer = document.querySelector('.modal-container');
+    const modalBody = document.querySelector('.modal-body');
+    
+    if (prog.isMultiFile) {
+        modalContainer.classList.add('modal-large');
+        btnCopy.style.display = 'none';
+        
+        modalBody.innerHTML = `
+            <div class="multi-code-container">
+                <div class="section-full-width">
+                    <div class="code-header-inline">
+                        <span class="code-title-text">Step 1: ${escapeHTML(prog.files.mac.name)}</span>
+                        <button class="btn-copy-inline" data-code-id="mac-code">
+                            <i data-feather="copy" class="copy-icon-inline"></i>
+                            <span class="copy-text-inline">Copy</span>
+                        </button>
+                    </div>
+                    <p class="code-desc-inline">Flash this program onto your target ESP32 to retrieve its hardware MAC address via the Serial Monitor. Write down this address to put in the Sender program.</p>
+                    <div class="code-wrapper">
+                        <pre class="line-numbers"><code class="language-cpp" id="mac-code">${escapeHTML(prog.files.mac.code)}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="sections-split">
+                    <div class="section-column">
+                        <div class="code-header-inline">
+                            <span class="code-title-text">Step 2: ${escapeHTML(prog.files.sender.name)}</span>
+                            <button class="btn-copy-inline" data-code-id="sender-code">
+                                <i data-feather="copy" class="copy-icon-inline"></i>
+                                <span class="copy-text-inline">Copy</span>
+                            </button>
+                        </div>
+                        <p class="code-desc-inline">Flash this on the ESP32 that has buttons connected to Pin 4 and Pin 5. Remember to replace the <code>broadcastAddress</code> with your receiver's MAC address.</p>
+                        <div class="code-wrapper">
+                            <pre class="line-numbers"><code class="language-cpp" id="sender-code">${escapeHTML(prog.files.sender.code)}</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="section-column">
+                        <div class="code-header-inline">
+                            <span class="code-title-text">Step 3: ${escapeHTML(prog.files.receiver.name)}</span>
+                            <button class="btn-copy-inline" data-code-id="receiver-code">
+                                <i data-feather="copy" class="copy-icon-inline"></i>
+                                <span class="copy-text-inline">Copy</span>
+                            </button>
+                        </div>
+                        <p class="code-desc-inline">Flash this on the ESP32 that is connected to the L298N/L293D motor driver at Pin 12 and Pin 13.</p>
+                        <div class="code-wrapper">
+                            <pre class="line-numbers"><code class="language-cpp" id="receiver-code">${escapeHTML(prog.files.receiver.code)}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add event listeners to the inline copy buttons
+        const copyBtns = modalBody.querySelectorAll('.btn-copy-inline');
+        copyBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = btn.getAttribute('data-code-id');
+                const codeText = document.getElementById(targetId).textContent;
+                navigator.clipboard.writeText(codeText)
+                    .then(() => {
+                        // Success state
+                        btn.classList.add('copied');
+                        btn.querySelector('.copy-text-inline').textContent = 'Copied!';
+                        const icon = btn.querySelector('.copy-icon-inline');
+                        icon.setAttribute('data-feather', 'check');
+                        feather.replace();
+                        showToast();
+                        
+                        setTimeout(() => {
+                            btn.classList.remove('copied');
+                            btn.querySelector('.copy-text-inline').textContent = 'Copy';
+                            icon.setAttribute('data-feather', 'copy');
+                            feather.replace();
+                        }, 2000);
+                    });
+            });
+        });
+        
+    } else {
+        modalContainer.classList.remove('modal-large');
+        btnCopy.style.display = 'flex';
+        
+        modalBody.innerHTML = `
+            <div class="code-wrapper">
+                <pre class="line-numbers"><code class="language-cpp" id="code-snippet"></code></pre>
+            </div>
+        `;
+        const codeSnippet = document.getElementById('code-snippet');
+        codeSnippet.textContent = prog.code;
+    }
     
     // Show Modal
     codeModal.classList.add('active');
     document.body.style.overflow = 'hidden'; // Disable scroll on background
     
     // Highlight Code via Prism
-    Prism.highlightElement(codeSnippet);
+    const codesToHighlight = modalBody.querySelectorAll('code');
+    codesToHighlight.forEach(el => Prism.highlightElement(el));
     
     // Reset copy button state
     resetCopyButtonState();
+    feather.replace();
 }
 
 // Close Modal
