@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xenon Robotics — IoT Trainer Kit Introduction Class</title>
+    <meta name="description" content="Access code modules, web servers, and firebase cloud integrations for the Xenon Robotics IoT Trainer Kit class.">
+    
+    <!-- Fonts: Inter & Fira Code for clean Neue Montreal feel & coding styling -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Prism.js Tomorrow Theme for premium C++ syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
+
+    <!-- Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Feather Icons for modern micro-UI elements -->
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body>
+
+    <!-- Background Tech Grid / Moving Accent Glowing Orbs -->
+    <div class="tech-grid"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <!-- Header Navigation -->
+    <header class="header">
+        <div class="header-logo">
+            <span class="logo-accent"></span>
+            XENON ROBOTICS
+        </div>
+        <div class="header-tag">IoT TRAINER KIT</div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="container">
+        
+        <!-- Hero Starting Screen -->
+        <section class="hero" id="hero">
+            <div class="hero-badge">INTRODUCTION CLASS</div>
+            <h1 class="hero-title">
+                Hardware meets <br>
+                <span class="gradient-text">the Cloud.</span>
+            </h1>
+            <p class="hero-desc">
+                An interactive directory of C++ programs and firmware modules for the Xenon Robotics IoT Trainer Kit. Access, copy, and upload code for every lab session.
+            </p>
+            <div class="hero-cta">
+                <a href="#programs" class="btn btn-primary" id="explore-btn">
+                    Explore Code Modules
+                    <i data-feather="arrow-down" class="btn-icon"></i>
+                </a>
+            </div>
+        </section>
+
+        <!-- Programs Dashboard -->
+        <section class="programs-section" id="programs">
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Program Modules</h2>
+                    <p class="section-subtitle">Click on any module to view, copy, and edit source code.</p>
+                </div>
+                <div class="program-count">
+                    <span id="completed-count">4</span> / 5 Modules Ready
+                </div>
+            </div>
+
+            <!-- Program Cards Grid -->
+            <div class="programs-grid" id="programs-grid">
+                <!-- Cards will be dynamically injected by JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 Xenon Robotics. Designed for high-performance learning.</p>
+            <div class="footer-status">
+                <span class="status-indicator"></span> System Active
+            </div>
+        </div>
+    </footer>
+
+    <!-- Code Viewer Modal Overlay -->
+    <div class="modal-overlay" id="code-modal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title-container">
+                    <span class="modal-number" id="modal-number">01</span>
+                    <div>
+                        <h3 class="modal-title" id="modal-title">Program Title</h3>
+                        <span class="modal-subtitle" id="modal-subtitle">Module Subtitle</span>
+                    </div>
+                </div>
+                <button class="btn-close" id="modal-close" aria-label="Close modal">
+                    <i data-feather="x"></i>
+                </button>
+            </div>
+            
+            <div class="modal-info-bar">
+                <div class="modal-tags" id="modal-tags">
+                    <!-- Tags will be dynamically injected -->
+                </div>
+                <button class="btn-copy" id="btn-copy" data-clipboard-target="#code-snippet">
+                    <i data-feather="copy" class="copy-icon"></i>
+                    <span class="copy-text">Copy Code</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="code-wrapper">
+                    <pre class="line-numbers"><code class="language-cpp" id="code-snippet">
+                    </code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <i data-feather="check-circle" class="toast-icon"></i>
+            <span>Source code copied to clipboard successfully!</span>
+        </div>
+    </div>
+
+    <!-- Prism.js scripts for C++ Code Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
+    <!-- Main Logic Script -->
+    <script src="main.js"></script>
+</body>
+</html>
